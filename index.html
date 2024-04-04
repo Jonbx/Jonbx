@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Diary Display</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+
+html, body {
+  font-family: Arial, sans-serif;
+  max-width: min(100vw, 428px);
+  margin: 0 auto; /* Center the container horizontally */
+  /* overflow-x: hidden; */
+}
+.overlay-image {
+  position: absolute;
+  height: 150px;
+  width: 150px;
+  border-radius: 50%;
+}
+.rounded-container {
+  position: relative;
+	width: 50px;
+	height: 50px;
+	min-width: 50px;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+.rounded-image {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+.diary { 
+}
+.diary img,video {
+  margin: 0px;
+  max-width: 100%; /* Limit the image width to the container's width */
+  height: auto; /* Maintain the aspect ratio of the image */
+} 
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    max-width: min(100vw, 428px);
+    max-height: min(100vw, 428px); /* Set your desired container height */
+    /* max-height: fit-content; */
+    /* background-image: url("https://place-hold.it/300x800"); */
+    /*background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-clip: border-box; */
+}
+.title {
+  font-weight: bold;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+.content {
+  white-space: pre-line;
+  margin-top: 10px;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-bottom: 20px;
+}
+.scrpDiv {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  margin: 10px;
+  border: 1px outset gray;
+  max-width: 95%;
+  padding-bottom: 15px;
+}
+.like {
+  display: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 10px;
+}  
+.like div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.comment {
+  display: flex;
+  flex-direction: row;
+  margin-left: 0px;
+  margin-right: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}  
+.column-container {
+  display: flex;
+  flex-direction: column;
+}
+.row-container {
+  display: flex;
+  flex-direction: row;
+}	
+.gray-bar {
+  background-color: #d3d3d3;
+  height: 15px;
+  width: 100%;
+  margin-top: 20px;
+}
+.thin-gray-bar {
+  background-color: #d3d3d3;
+  height: 1px;
+  width: 100%;
+}
+.number {
+    display: inline; /* Display the numbers inline with text */
+    margin: 0 5px; /* Add spacing between numbers and text */
+}
+
+</style>  
+</head>
+<body>
+ 
+<SCRIPT>items={};</SCRIPT>
+<SCRIPT src="diary.js"></SCRIPT>
+
+<div id=intro style="display:none;flex-direction:column;align-items:center;justify-content:center;background-color:#6699ff;color:white;">
+  <div style="height:150px;width:150px;padding-top:20px;margin:20px">
+   <img id=bg style="z-index: 1" class=overlay-image>
+   <img id=profile style="z-index: 2" class=overlay-image>
+  </div>
+  <div style="margin:0px;font-size:25px;font-weight:bold" id='diaryName'></div>
+  <div style="margin:15px;" id='introduce'></div>
+  <div id='birthday' style="display:none;"></div>
+  <div id='sex' style="display:none;"></div>
+  <div id='bloodType' style="display:none;"></div>
+  <div id='job' style="display:none;"></div>
+  <div style="display:flex;flex-direction:row;margin:15px;color:gray;">
+    Posts <div class="number" id='diaryCount'></div><div style="margin-left:20px;">Total <div class="number" id='total'></div>
+  </div>
+ </div>
+    <!-- Diary entries will be appended to the end of body -->
+
+<SCRIPT>
+
+function formatNumberWithCommas(number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function formatTimestamp(unixTimestamp) {
+	// Convert the Unix timestamp to a Date object
+	var date = new Date(unixTimestamp * 1000);
+
+	// Define an array of month names
+	const monthNames = [
+		"January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December"
+	];
+
+	// Get the month, day, and year
+	var month = monthNames[date.getMonth()];
+	var day = date.getDate();
+	var year = date.getFullYear();
+
+	// Create the formatted date string
+	var formattedDate = month + " " + day + ", " + year;
+
+	return formattedDate;
+}
+
+function loadScript(scriptUrl) {
+  return new Promise((resolve, reject) => {
+    var script = document.createElement('script');
+    script.src = scriptUrl;
+
+    script.onload = resolve;
+    script.onerror = reject;
+
+    document.head.appendChild(script);
+  });
+}
+
+async function loadLikes(diaryNo, newDiv) {
+  try {
+    await loadScript(`${diaryNo}/likes.js`);
+    //console.log(likes);
+    newDiv.replaceWith(diaryLikes(likes, diaryNo));
+  } catch (error) {
+    //console.error('Failed to load:', error);
+  }
+}
+
+async function loadComments(diaryNo, newDiv) {
+  try {
+    await loadScript(`${diaryNo}/comments.js`);
+    //console.log(comments);
+    newDiv.replaceWith(diaryComments(comments, diaryNo));
+  } catch (error) {
+    //console.error('Failed to load:', error);
+  }
+}
+
+function diaryEntry(item) {
+
+  // create diary header (avatar profile img, name and date to the right)
+  var dateStr = formatTimestamp(parseInt(item.regDate)/1000);
+  if (! item.content) {  // check for undefined content and replace with empty string
+    item.content = "";
+  }
+  let newDiv = document.createElement('div');
+  newDiv.addEventListener("click", function() {
+    toggle(item.diaryNo);
+  });
+  newDiv.className = "diary";
+  newDiv.innerHTML = 
+    `<div class="gray-bar"></div>
+    <div class="row-container" style="margin-top:5px;margin-bottom:5px;">
+      <div class="rounded-container"> 
+        <img style="z-index: 1" class="rounded-image" src="${bgImg}">
+        <img style="z-index: 2" class="rounded-image" src="${avatarImg}">
+      </div>
+      <div class="column-container">
+        <div class="row-container" style="color:blue;font-weight=bold;margin-top:10px;margin-bottom:3px;">${item.nickname}</div>
+        <div class="row-container" style="color:#c3c3c3;">${dateStr}</div>
+      </div>
+    </div>`;
+
+  // handle various diary entry types, appending a div for content to the header we created above
+  try {
+    switch(item.imageTypeExtended) {
+
+      case 'video_rcrd':  /// video post
+      case 'video_play':
+        newDiv.innerHTML += `
+          <div><video controls><source src="${item.diaryNo}/video.mp4">Your browser does not support the video tag.</video></div>
+          <div class="title">${item.title}</div>
+          <div class="content">${item.content}</div>`;
+        break;
+
+      case 'achieve':  // achievement post (gatcha or other)
+      case 'lineplay':
+        newDiv.innerHTML += `
+          <div class="row-container" style="align-items:center;margin-top:30px;margin-bottom:30px;">
+            <div style="margin:10px;"><img src="${item.diaryNo}/image.png"></div>
+            <div class="column-container">
+              <div class="column-container" style="align-self:center;">
+                <div class="title">${item.title}</div>
+                <div class="content">${item.content}</div>
+              </div>
+            </div>
+          </div>`; 
+        break;
+
+      case 'none':  // no picture included, just text
+        newDiv.innerHTML += `
+          <div style="margin-bottom:10px;">${item.title}</div>
+          <div class="content">${item.content}</div>`;
+        break;
+
+      case 'obs': // obs, comic, or other post
+      case 'comic_shop':
+      case 'comic_post':
+      case 'circle_cap':
+      case 'contest':
+      case 'dsn_ph_H':
+      case 'cc_hal_1':
+      case 'riding_n':
+          // <div id="com${item.diaryNo}" class=container style="display:flex;background-image:url(${item.diaryNo}/image.png);"></div>
+        newDiv.innerHTML += `
+          <div id="com${item.diaryNo}" style="display:flex;" class=container><img src=${item.diaryNo}/image.png></div>
+          <div id="exp${item.diaryNo}" style="display:none;"><img src=${item.diaryNo}/image.png></div>
+          <div class="title">${item.title}</div>
+          <div class="content">${item.content}</div>
+        `;
+        break;
+
+      case 'scrp_post':  // scrapbook/share post
+        newDiv.innerHTML += `<div class="content">${item.content}</div>`;
+        const scrpDiv = document.createElement('div');
+        scrpDiv.classList.add('scrpDiv');
+        dateStr = formatTimestamp(parseInt(item.diaryScrap.diaryDate)/1000);
+        scrpDiv.innerHTML = `
+          <div class="row-container" style="margin-top:5px;margin-bottom:5px;">
+            <div class="rounded-container"> 
+              <img style="z-index: 1" class="rounded-image" src="${item.diaryScrap.profileBackgroundImageUrl}">
+              <img style="z-index: 2" class="rounded-image" src="${item.diaryNo}/${item.diaryScrap.avatarId}.png">
+            </div>
+            <div class="column-container">
+              <div class="row-container" style="color:blue;font-weight=bold;margin-top:10px;margin-bottom:3px;">
+                ${item.diaryScrap.avatarName}</div>
+              <div class="row-container" style="color:#c3c3c3;">${dateStr}</div>
+            </div>
+          </div>
+          <div style="align-self:center;"><img src="${item.diaryNo}/image.png"></div>
+          <div class="content" style="margin-left:10px;margin-right:10px">${item.diaryScrap.content}</div>`;
+        newDiv.appendChild(scrpDiv);
+        break;
+
+      default:  // catch unknown entry type
+        newDiv.innerHTML = 'unknown diary type: ' + JSON.stringify(item);
+        console.error('unknown diary type: ' + JSON.stringify(item));
+        break;              
+    }
+    responseSummary = '<div class=content>';
+    if(item.likeCount == 1) {
+      responseSummary += '1 Like&nbsp;&nbsp;&nbsp;&nbsp;';
+    } else if (item.likeCount > 1) {
+      responseSummary += `${item.likeCount} Likes&nbsp;&nbsp;&nbsp;&nbsp;`;
+    }
+    if(item.commentCount == 1) {
+      responseSummary += '1 Comment';
+    } else if (item.commentCount > 1) {
+      responseSummary += `${item.commentCount} Comments`;
+    }
+    responseSummary += '</div>';
+    newDiv.innerHTML += responseSummary;  // add "X likes Y comments"
+
+  } catch (error) {
+    newDiv.innerHTML = JSON.stringify(item);
+    document.body.appendChild(newDiv);
+    console.error('skip: ' + JSON.stringify(item));
+  }
+  return(newDiv);
+}
+
+function toggle(diaryNo) {
+  foo = document.getElementById(`com${diaryNo}`);
+  if (foo) {
+    if (foo.style.display == 'flex') {
+      foo.style.display = 'none';
+    } else {
+      foo.style.display = 'flex';
+    }
+  }
+  foo = document.getElementById(`exp${diaryNo}`);
+  if (foo) {
+    if (foo.style.display == 'flex') {
+      foo.style.display = 'none';
+    } else {
+      foo.style.display = 'flex';
+    }
+  }
+  foo = document.getElementById(`cmt${diaryNo}`);
+  if (foo) {
+    if (foo.style.display == 'flex') {
+      foo.style.display = 'none';
+    } else {
+      foo.style.display = 'flex';
+    }
+  }
+  foo = document.getElementById(`lik${diaryNo}`);
+  if (foo) {
+    if (foo.style.display == 'flex') {
+      foo.style.display = 'none';
+    } else {
+      foo.style.display = 'flex';
+    }
+  }
+  
+}
+
+function diaryLikes(likes, diaryNo) {  // returns div with likes or error
+  // process likes and comments (create div to hold expanded likes/comments and onclick function to load comments and unhide the div)
+  let newDiv = document.createElement('div');  // div to hold all likes
+  newDiv.className = 'like';
+  newDiv.id = `lik${diaryNo}`;
+  newDiv.addEventListener("click", function() {
+    toggle(diaryNo);
+  })
+  // newDiv.style.display = 'none';
+  if (likes) {
+    try {
+      // process each like and add to document
+      for (const like of likes) {
+        let newLike = document.createElement('div');  // new like div (holds both like image and text name)
+        newLike.innerHTML = `<div><img width=25px height=25px src="like/like${like.likeType}.png"></div>
+                              <div style="margin-left:5px;margin-right:10px">${like.nickname}</div>
+                            `;
+        newDiv.appendChild(newLike);  // add like to list
+      }
+    } catch (error) {
+      newDiv.innerHTML = '<p>error: ' + error.message + ' bork: ' + JSON.stringify(like) + "</p>";
+      console.error(error + ": " + JSON.stringify(like));
+    }
+  }
+  return(newDiv);
+}
+
+function diaryComments(comments, diaryNo) {  // return div with comments or error
+  let newDiv = document.createElement('div');
+  newDiv.id = `cmt${diaryNo}`;
+  newDiv.addEventListener("click", function() {
+    toggle(diaryNo);
+  })
+  newDiv.style.display = "none";
+  newDiv.style.flexDirection = "column";
+  if (comments) {
+    try {
+      // process each comment and add to document
+      for (const comment of comments.reverse()) {
+        dateStr = formatTimestamp(parseInt(comment.date)/1000);
+        newDiv.innerHTML += `
+          <div class="thin-gray-bar"></div>
+          <div class="row-container" style="margin-top:10px;margin-bottom:10px;">
+            <div class="rounded-container">
+              <img style="z-index: 1" class="rounded-image" src="${comment.bg}">
+              <img style="z-index: 2" class="rounded-image" src="${diaryNo}/${comment.commentAvatarId}.png">
+            </div>
+            <div class=column-container style="margin-top:0px;margin-bottom:0px;">
+              <div class=row-container style="margin-top:5px">
+                <div style="color:blue;font-weight=bold;">${comment.nickname}</div>
+                <div style="color:#d3d3d3;margin-left:10px;">${dateStr}</div>
+              </div>
+              <div class="row-container comment">${comment.content}</div>
+            </div>
+          </div>`;
+      }
+    } catch (error) {
+      newDiv.innerHTML = '<p>error: ' + error.message + ' bork: ' + JSON.stringify(comment) + "</p>";
+      console.error(error + ": " + JSON.stringify(comment));
+    }
+  }
+  return(newDiv);
+}
+
+// add some diary entries to document (add some dynamic scroll later)
+function addDiaryDiv(count) {
+  for (var i = 0; i<count; i++) {
+    item = items[keys.shift()];  // grab top item off dictionary, remove key
+    if (item) {
+      document.body.appendChild(diaryEntry(item));
+      if (item.likeCount) {
+        likeDiv = document.createElement('div');
+        document.body.appendChild(likeDiv);
+        loadLikes(item.diaryNo, likeDiv);
+      }
+      if (item.commentCount) {
+        commentDiv = document.createElement('div');
+        document.body.appendChild(commentDiv);
+        loadComments(item.diaryNo, commentDiv);
+      }
+    }
+  }
+}
+
+function isScrolledToBottom() {
+  // Calculate the distance between the bottom of the document and the current scroll position
+  const documentHeight = document.documentElement.scrollHeight;
+  const windowHeight = window.innerHeight;
+  const scrollPosition = window.scrollY;
+
+// console.log(`${documentHeight} - ${windowHeight} - ${scrollPosition} = ${documentHeight - windowHeight - scrollPosition}`);
+
+// Return true if the distance between the bottom of the document and the current scroll position is less than or equal to 0
+  return documentHeight - windowHeight - scrollPosition <= 300;
+}
+
+function handleScroll() {
+  // Check if scrolled to the bottom and execute the function
+  if (isScrolledToBottom()) {
+    addDiaryDiv(5);
+  }
+}
+
+/// 
+/// MAIN CODE HERE
+///
+
+//globals
+var bgImg = '';
+var avatarImg = '';
+
+// Add event listeners for scroll and resize events
+window.addEventListener("scroll", handleScroll);
+window.addEventListener("resize", handleScroll);
+
+try {  // catch any otherwise uncaught random error and display diary scrammed message
+
+  // populate diary Intro
+  document.title = diary.diaryName;
+  const avatarId = diary["avatarId"];
+  //document.getElementById("name").innerHTML = "Nickname: " + diary.nickname;
+  document.getElementById("diaryName").innerHTML = diary.diaryName;
+  if (diary.introduce) {
+    document.getElementById("introduce").innerHTML = diary.introduce;
+  }
+  //document.getElementById("birthday").innerHTML = "Birthday: " + diary.birthDay;
+  //document.getElementById("sex").innerHTML = "Sex: " + diary.sex;
+  //document.getElementById("bloodType").innerHTML = "Bloodtype: " + diary.bloodType;
+  //document.getElementById("job").innerHTML = "Job: " + diary.job;
+  document.getElementById("diaryCount").innerHTML =  formatNumberWithCommas(diary.diaryCount);
+  document.getElementById("total").innerHTML = formatNumberWithCommas(diary.totalVisitor);
+
+  // build URLs for intro pictures
+  avatarImg = `${avatarId}.png`
+  document.getElementById("profile").src = avatarImg;
+  bgImg = diary.bg;
+  document.getElementById("bg").src = bgImg;
+
+  const colorMap = {
+    "red": "#ff3f43",
+    "Cony": "#ff6d78",
+    "sally": "#feae25",
+    "default": "#00d293",
+    "blue": "#5ccfee",
+    "deepblue": "#2992ed",
+    "violet": "#9b52c8",
+    "dark": "#32405a",
+    "Brown": "#5a3926",
+    "white": "#ffffff",
+    "gray": "#8f98a7",
+    "black": "#262523"
+  };
+
+  if (diary.skinId in colorMap) {
+    bgColor = colorMap[diary.skinId]
+    if (bgColor == "#ffffff") {
+      document.getElementById("intro").style.color = "black";  
+    }
+  } else {
+    bgColor = colorMap["default"];
+  }
+  document.getElementById("intro").style.backgroundColor = bgColor;
+  document.getElementById("intro").style.display="flex";  // unhide diary intro
+
+  // process each diary entry and add to document
+  // Step 1: Get the keys
+  keys = Object.keys(items).reverse();
+
+  // Step 2: Sort the keys in reverse order
+  //keys.sort((a, b) => b.localeCompare(a));
+
+  addDiaryDiv(8);  // add a few diary entries to document.  call again when we scroll via callback
+
+} catch (error) {
+  console.error(error);
+  let errorDiv = document.createElement('div');
+  errorDiv.innerHTML = "ERROR IN DIARY DATA -- PLEASE REPORT: " + error.message;
+  document.body.appendChild(errorDiv);
+}
+
+</script>
+</body>
+</html>
+
